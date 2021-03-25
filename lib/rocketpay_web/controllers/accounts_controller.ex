@@ -1,0 +1,35 @@
+defmodule RocketpayWeb.AccountsController do
+  use RocketpayWeb, :controller
+
+  alias Rocketpay.Account
+  alias Rocketpay.Accounts.Transactions.Response, as: TransactionResponse
+
+  action_fallback RocketpayWeb.FallbackController
+
+  def deposit(conn, params) do
+    with {:ok, %Account{} = account} <- Rocketpay.deposit(params) do
+      conn
+      |> put_status(:created)
+      |> render("update.json", account: account)
+    end
+  end
+
+  def withdraw(conn, params) do
+    with {:ok, %Account{} = account} <- Rocketpay.withdraw(params) do
+      conn
+      |> put_status(:created)
+      |> render("update.json", account: account)
+    end
+  end
+
+  def transaction(conn, params) do
+    ## If want do cucurrent task can be use Task.
+    task = Task.async(fn -> Rocketpay.transaction(params) end)
+    ## If want do any thing and not import the response can use Task.start(), like send email
+    with {:ok, %TransactionResponse{} = transaction} <- Task.await(task) do
+      conn
+      |> put_status(:created)
+      |> render("transaction.json", transaction: transaction)
+    end
+  end
+end
